@@ -7,12 +7,17 @@ export function formatCoins(value) {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/** Büyük kazançları kısaltır: 12.500 → "12.5K", 1.200.000 → "1.2M". */
+/**
+ * Büyük sayıları kısaltır: 12.500 → "12.5K", 1.000.000 → "1M",
+ * 1.250.000 → "1.3M", 2.000.000.000 → "2MR".
+ */
 export function shortCoins(value) {
   const n = Math.max(0, Math.round(Number(value) || 0));
   if (n < 10000) return formatCoins(n);
-  if (n < 1000000) return `${(n / 1000).toFixed(n < 100000 ? 1 : 0)}K`;
-  return `${(n / 1000000).toFixed(1)}M`;
+  const trim = (text) => text.replace(/\.0$/, '');
+  if (n < 1000000) return `${trim((n / 1000).toFixed(n < 100000 ? 1 : 0))}K`;
+  if (n < 1000000000) return `${trim((n / 1000000).toFixed(1))}M`;
+  return `${trim((n / 1000000000).toFixed(1))}MR`;
 }
 
 export const clamp = (v, min, max) => Math.min(max, Math.max(min, v));

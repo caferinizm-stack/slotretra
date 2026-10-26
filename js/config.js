@@ -49,8 +49,25 @@ export const MIN_CLUSTER = 8;
 /** Bir spin içinde en fazla kaç kez düşüp yenilenebilir (cascade). */
 export const MAX_CASCADES = 6;
 
-/** Bahis adımları (kristal). Sunucu da bu listeyi doğrular. */
-export const BETS = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000];
+/**
+ * Bahis adımları (kristal). Sunucu da bu listeyi doğrular
+ * (`supabase_dede_slot.sql` ▸ `p_bet not in (...)`).
+ */
+export const BETS = [
+  100,
+  250,
+  500,
+  1000,
+  2500,
+  5000,
+  10000,
+  25000,
+  50000,
+  100000,
+  250000,
+  500000,
+  1000000,
+];
 
 /** Bonus satın alma: bahsin kaç katı. */
 export const BONUS_BUY_X = 100;
