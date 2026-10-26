@@ -44,10 +44,11 @@ body {
   flex-direction: column;
   height: 100%;
   height: 100dvh;
-  /* Güvenli alan **uygulanmaz**: sayfa uygulamanın kendi panelinin içinde
-     açılıyor, çentiğin altında zaten yer var. `env(...)` burada üstte ~50 px
-     ölü boşluk bırakıyordu. */
-  padding: 0;
+  /* Üstte çentik payı **yok** (sayfa uygulamanın kendi panelinde, başlığın
+     altında açılıyor; `env(safe-area-inset-top)` ~50 px ölü boşluk
+     bırakıyordu). Altta ise sistem gezinme çubuğu kadar boşluk şart:
+     BAHİS / ÇEVİR / BONUS düğmeleri çubuğun altında kalıyordu. */
+  padding: 0 0 max(6px, env(safe-area-inset-bottom, 0px));
 }
 
 /* ── Üst şerit ───────────────────────────────────────────────────────────── */
@@ -490,7 +491,8 @@ body {
 /* ── Alt kontrol paneli ──────────────────────────────────────────────────── */
 
 .controls {
-  padding: 8px 12px 10px;
+  /* Alt boşluk `.app` tarafından güvenli alanla veriliyor. */
+  padding: 8px 12px 6px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -812,30 +814,25 @@ body {
 
 /* ── Nasıl oynanır paneli ─────────────────────────────────────────────────── */
 
-/* Panel **tam** görünsün: başlık ve düğme sabit, içerik kendi içinde kayar. */
+/* Panel ekrana sığmazsa **tümü** kaydırılır (düğme de içinde). */
 .help-sheet {
   max-height: 100%;
-  display: flex;
-  flex-direction: column;
   padding: 14px 14px 12px;
   text-align: left;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .help-sheet h2 {
   text-align: center;
-  flex: 0 0 auto;
   margin-bottom: 6px;
   font-size: 16px;
 }
 
+/* İçerik artık kendi başına kaymaz: panel tek parça kayar. */
 .help-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  padding-right: 3px;
+  padding-right: 2px;
 }
 
 .help-list {
@@ -921,6 +918,11 @@ body {
   width: min(100%, 380px);
   padding: 16px 14px 12px;
   text-align: left;
+  /* Sıralama uzarsa panel kaydırılır. */
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .board-sheet h2 {
@@ -958,10 +960,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  max-height: 46vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
   padding-right: 2px;
 }
 
@@ -1260,9 +1258,8 @@ body {
   }
 }
 
-/* Kapat düğmesi panelin dibinde sabit durur; içerik onun üstünde kayar. */
+/* Kapat düğmesi içeriğin hemen altında (panel kaydıkça görünür). */
 .help-sheet .sheet-actions {
-  flex: 0 0 auto;
   margin-top: 10px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 209, 102, 0.16);
