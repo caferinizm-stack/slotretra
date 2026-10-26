@@ -91,12 +91,30 @@ class Game {
         this.changeBet(direction);
       },
       onSound: () => this.sound.toggle(),
+      onLeaderboard: () => this.refreshLeaderboard(),
       payRows: (bet) => this.payRows(bet),
     });
     this.hud.setSound(this.sound.enabled);
     this.hud.setBalance(0, false);
     this.stage.orbs.onLand = () => this.sound.land();
     this.bindSoundUnlock();
+  }
+
+  /** Son 24 saatin liderlik tablosu (gerçek Supabase verisi). */
+  async refreshLeaderboard() {
+    const engine = this.engine;
+    if (!engine?.leaderboard) {
+      this.hud.failLeaderboard('Liderlik tablosu yüklenemedi.');
+      return;
+    }
+    try {
+      const result = await engine.leaderboard(10);
+      if (result?.error) this.hud.failLeaderboard(result.error);
+      else this.hud.setLeaderboard(result);
+    } catch (error) {
+      console.error('[dede] liderlik hatası', error);
+      this.hud.failLeaderboard('Sunucuya ulaşılamadı. Tekrar dene.');
+    }
   }
 
   /** Tarayıcı sesi ilk dokunuşta açar. */
@@ -366,11 +384,12 @@ class Game {
         hud.setMultiplier(step.multiplier);
       }
 
-      // Kazanç yazısı.
+      // Kazanç yazısı. **Bonus'ta** adım kazancı çarpansız toplanır; o
+      // yüzden büyük etiket yalnız tur sonunda (settle) gösterilir.
       if (step.appliedWin >= script.bet * 10) {
         hud.flashBigWin(step.appliedWin, 'KAZANÇ');
         stage.shake(0.55);
-      } else if (step.appliedWin > 0) {
+      } else if (step.appliedWin > 0 || (inBonus && step.stepWin > 0)) {
         stage.shake(0.22);
       }
 
@@ -391,6 +410,15 @@ class Game {
     if (inBonus) {
       // Çarpanlar bonus havuzuna uçar; kazanç havuzda toplanır (bakiye değişmez).
       await stage.orbs.collect(this.bonusPoolWorldPoint());
+
+      // **Tur kapanışı:** semboller bitti → ham toplam × toplam çarpan.
+      const settle = script.settle;
+      if (settle && settle.total > 0) {
+        hud.flashBigWin(settle.total, `×${settle.multiplier} ÇARPAN`);
+        stage.shake(settle.total >= script.bet * 20 ? 0.5 : 0.3);
+        await wait(560);
+      }
+
       this.bonusPool += script.totalWin;
       this.hud.setBonusPool(this.bonusPool);
       if (script.totalWin > 0) this.sound.win(script.totalWin >= script.bet * 10);

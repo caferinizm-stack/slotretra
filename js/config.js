@@ -68,14 +68,14 @@ export const MAX_WIN_X = 10000;
  * `pay` = 8 sembolde bahsin kaç katı (adet/8 ile ölçeklenir).
  */
 export const SYMBOLS = [
-  { id: 'gem_blue', name: 'Mavi Mücevher', weight: 25, pay: 0.083, tier: 1 },
-  { id: 'gem_green', name: 'Yeşil Mücevher', weight: 21, pay: 0.115, tier: 2 },
-  { id: 'gem_red', name: 'Kırmızı Mücevher', weight: 16, pay: 0.165, tier: 3 },
-  { id: 'gem_purple', name: 'Mor Mücevher', weight: 12, pay: 0.24, tier: 4 },
-  { id: 'scarab', name: 'Altın Böcek', weight: 9, pay: 0.375, tier: 5 },
-  { id: 'ring', name: 'Yüzük', weight: 7, pay: 0.6, tier: 6 },
-  { id: 'hourglass', name: 'Kum Saati', weight: 5, pay: 1, tier: 7 },
-  { id: 'crown', name: 'Taç', weight: 2, pay: 1.7, tier: 8 },
+  { id: 'gem_blue', name: 'Mavi Mücevher', weight: 25, pay: 0.125, tier: 1 },
+  { id: 'gem_green', name: 'Yeşil Mücevher', weight: 21, pay: 0.173, tier: 2 },
+  { id: 'gem_red', name: 'Kırmızı Mücevher', weight: 16, pay: 0.248, tier: 3 },
+  { id: 'gem_purple', name: 'Mor Mücevher', weight: 12, pay: 0.36, tier: 4 },
+  { id: 'scarab', name: 'Altın Böcek', weight: 9, pay: 0.563, tier: 5 },
+  { id: 'ring', name: 'Yüzük', weight: 7, pay: 0.9, tier: 6 },
+  { id: 'hourglass', name: 'Kum Saati', weight: 5, pay: 1.5, tier: 7 },
+  { id: 'crown', name: 'Taç', weight: 2, pay: 2.55, tier: 8 },
   // Scatter: kazancı yok; 4+ tanesi bonus turu açar.
   { id: 'zeus', name: 'Zeus', weight: 3, pay: 0, tier: 9, scatter: true },
 ];
@@ -95,7 +95,7 @@ export const ORB_VALUES = [
 ];
 
 /** Çarpan küresi çıkma olasılığı (tur başına). */
-export const ORB_CHANCE = { base: 0.05, free: 0.12 };
+export const ORB_CHANCE = { base: 0.05, free: 0.045 };
 
 /** Animasyon süreleri (ms) — sunucu sonucu hazır gelir, akış istemcide. */
 export const TIMING = {

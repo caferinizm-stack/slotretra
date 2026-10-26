@@ -9,13 +9,13 @@
 // eklenir (sayaç animasyonuyla) ve yanında yalnız kısa süreli "+N" baloncuğu
 // belirir. **Bonus kazancı** ise bonus bitene kadar burada birikir.
 
-import { BETS, BONUS_BUY_X, FREE_SPINS, SCATTER_TRIGGER } from '../config.js';
+import { BETS, BONUS_BUY_X, CRYSTAL_ASSET, FREE_SPINS, SCATTER_TRIGGER } from '../config.js';
 import { formatCoins, shortCoins, clamp } from '../core/utils.js';
 
 const $ = (id) => document.getElementById(id);
 
 export class Hud {
-  constructor({ onSpin, onBet, onBuy, onSound, payRows }) {
+  constructor({ onSpin, onBet, onBuy, onSound, onLeaderboard, payRows }) {
     this.el = {
       balance: $('balance'),
       balancePill: $('balance-pill'),
@@ -55,12 +55,20 @@ export class Hud {
       helpBet: $('help-bet'),
       helpClose: $('help-close'),
       sound: $('sound'),
+      boardButton: $('board'),
+      boardOverlay: $('board-overlay'),
+      boardList: $('board-list'),
+      boardMe: $('board-me'),
+      boardClose: $('board-close'),
+      boardRefresh: $('board-refresh'),
+      boardSub: document.querySelector('.board-sub'),
       boot: $('stage-loading'),
       bootFill: $('boot-fill'),
       bootNote: $('boot-note'),
     };
 
     this.payRows = payRows ?? null;
+    this._onLeaderboard = onLeaderboard ?? null;
     this.bet = BETS[3] ?? 1000;
     this.balance = 0;
     this._shownBalance = 0;
@@ -98,6 +106,22 @@ export class Hud {
       this.setSound(on);
     });
 
+    // Liderlik tablosu: açılınca veri sunucudan istenir.
+    this.el.boardButton?.addEventListener('click', () => {
+      this.openLeaderboard();
+      this._onLeaderboard?.();
+    });
+    this.el.boardRefresh?.addEventListener('click', () => {
+      this.openLeaderboard();
+      this._onLeaderboard?.();
+    });
+    this.el.boardClose?.addEventListener('click', () => {
+      this.el.boardOverlay.hidden = true;
+    });
+    this.el.boardOverlay?.addEventListener('click', (event) => {
+      if (event.target === this.el.boardOverlay) this.el.boardOverlay.hidden = true;
+    });
+
     // Yardım: oyun ortasında açılır, oyunu duraklatmaz.
     this.el.helpButton?.addEventListener('click', () => {
       this.el.helpOverlay.hidden = false;
@@ -111,7 +135,9 @@ export class Hud {
       if (event.target === this.el.helpOverlay) this.el.helpOverlay.hidden = true;
     });
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') this.el.helpOverlay.hidden = true;
+      if (event.key !== 'Escape') return;
+      this.el.helpOverlay.hidden = true;
+      this.el.boardOverlay.hidden = true;
     });
   }
 
@@ -395,6 +421,117 @@ export class Hud {
   /** Sade bilgi paneli (tek düğme). */
   info({ title, body, ok = 'Devam' }) {
     return this.ask({ title, body, ok, cancel: '' });
+  }
+
+  // ── Liderlik tablosu ────────────────────────────────────────────────────
+
+  /** Paneli açar ve "yükleniyor" durumuna alır. */
+  openLeaderboard() {
+    if (!this.el.boardOverlay) return;
+    this.el.boardOverlay.hidden = false;
+    this.el.boardMe.hidden = true;
+    this.el.boardList.innerHTML = '<div class="board-empty">Yükleniyor…</div>';
+  }
+
+  /** Sunucudan gelen satırları çizer. */
+  setLeaderboard({ rows = [], me = null, demo = false } = {}) {
+    const list = this.el.boardList;
+    if (!list) return;
+    list.textContent = '';
+
+    if (this.el.boardSub) {
+      this.el.boardSub.textContent = demo
+        ? 'Demo sıralama — yayında gerçek oyuncular görünür.'
+        : 'Son 24 saatte en çok kazanan oyuncular. Tablo sürekli yenilenir.';
+    }
+
+    if (!rows.length) {
+      const empty = document.createElement('div');
+      empty.className = 'board-empty';
+      empty.textContent = 'Son 24 saatte henüz kazanan yok. İlk sırayı sen kap! ';
+      empty.append(Object.assign(document.createElement('b'), { textContent: '🏆' }));
+      list.appendChild(empty);
+    }
+
+    for (const row of rows) {
+      const rank = Number(row.rank) || 0;
+      const line = document.createElement('div');
+      line.className = `board-row top${rank}`;
+      if (row.is_me) line.classList.add('me');
+
+      const rankCell = document.createElement('div');
+      rankCell.className = 'board-rank';
+      rankCell.textContent = String(rank);
+      line.appendChild(rankCell);
+
+      // Avatar: varsa resim, yoksa baş harf (kullanıcı adı güvenli yazılır).
+      const avatar = document.createElement('div');
+      avatar.className = 'board-avatar';
+      const name = String(row.username ?? '').trim() || 'Oyuncu';
+      if (row.avatar_url) {
+        const img = document.createElement('img');
+        img.src = String(row.avatar_url);
+        img.alt = '';
+        img.loading = 'lazy';
+        img.referrerPolicy = 'no-referrer';
+        avatar.appendChild(img);
+      } else {
+        avatar.textContent = name.slice(0, 1).toLocaleUpperCase('tr-TR');
+      }
+      line.appendChild(avatar);
+
+      const who = document.createElement('div');
+      who.className = 'board-who';
+      who.append(
+        Object.assign(document.createElement('b'), { textContent: name }),
+        Object.assign(document.createElement('small'), {
+          textContent: `${shortCoins(Number(row.spins) || 0)} tur · ${shortCoins(
+            Number(row.won) || 0,
+          )} kristal kazandı`,
+        }),
+      );
+      line.appendChild(who);
+
+      const net = document.createElement('div');
+      net.className = 'board-net';
+      const coin = document.createElement('img');
+      coin.className = 'coin';
+      coin.src = CRYSTAL_ASSET;
+      coin.alt = '';
+      net.append(coin, document.createTextNode(`+${shortCoins(Number(row.net) || 0)}`));
+      line.appendChild(net);
+
+      list.appendChild(line);
+    }
+
+    // Kendi özetin (sunucu yalnız giriş yapmışken verir).
+    const box = this.el.boardMe;
+    if (box) {
+      const spins = Number(me?.spins) || 0;
+      const net = Number(me?.net) || 0;
+      if (me && spins > 0) {
+        box.hidden = false;
+        box.textContent = '';
+        const left = document.createElement('span');
+        left.textContent = me.rank > 0 ? `Sıran #${me.rank}` : 'Sıralamada değilsin';
+        const right = document.createElement('b');
+        right.textContent = `${net >= 0 ? '+' : ''}${shortCoins(net)} · ${shortCoins(spins)} tur`;
+        box.append(left, right);
+      } else {
+        box.hidden = true;
+      }
+    }
+  }
+
+  /** Tablo yüklenemediğinde. */
+  failLeaderboard(text) {
+    const list = this.el.boardList;
+    if (!list) return;
+    list.textContent = '';
+    const box = document.createElement('div');
+    box.className = 'board-empty';
+    box.textContent = text || 'Liderlik tablosu yüklenemedi.';
+    list.appendChild(box);
   }
 
   // ── Ödeme tablosu ───────────────────────────────────────────────────────

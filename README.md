@@ -8,7 +8,9 @@ fırlattığı çarpan küreleri ve 15 turluk ücretsiz tur bonusu.
 - **Kullanıcı:** uygulama hesabı (oturum WebView'den aktarılır). Anonim giriş yok.
 - Derleme adımı yok: saf ES modülleri + tek CSS dosyası. CDN'den yalnız `three`
   yüklenir; tüm modeller/dokular tarayıcıda üretilir.
-- **RTP:** %98,4 (1,67 milyon tur simülasyonu, bahis 1.000 · `tools/simulate.mjs`).
+- **RTP:** %95,9 (300 bin tur simülasyonu, bahis 1.000 · `tools/simulate.mjs`).
+- **Liderlik:** son **24 saat**in en çok kazananları (gerçek `game_results`
+  defteri · `supabase_dede_slot_liderlik.sql`).
 
 **Yayındaki adres:** <https://caferinizm-stack.github.io/slotretra/>
 (GitHub Pages · `slot_web/` klasörünün kökü doğrudan servis edilir.)
@@ -146,6 +148,11 @@ node tools/simulate.mjs 1000000 1000   # RTP / bonus sıklığı ölçümü
    - `public.dede_players` (bonus turu durumu),
    - `public.dede_spins` (denetim kaydı),
    - `public.dede_state()`, `public.dede_spin(bigint)`, `public.dede_buy_bonus(bigint)`.
+   - **Ödeme tablosu / çarpan sıklığı değiştiyse bu dosya yeniden çalıştırılır**
+     (`create or replace`, veri silmez).
+4. [`supabase_dede_slot_liderlik.sql`](../supabase_dede_slot_liderlik.sql)
+   → 24 saatlik liderlik: `public.dede_leaderboard(int)`,
+   `public.dede_leaderboard_me()`.
 
 > **Bu SQL çalıştırılmadan oyun açılmaz:** istemci `dede_state` bulamayınca
 > "Sunucu fonksiyonları eksik. supabase_dede_slot.sql dosyasını çalıştır."

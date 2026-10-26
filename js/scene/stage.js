@@ -325,9 +325,9 @@ export class Stage {
 
     // **Dede tahtanın arkasında, ortada** (referanstaki gibi): beli çerçevenin
     // üst kenarında kalır, göğsü/başı yukarıda görünür.
-    const zeusScale = compact ? 0.74 : 0.72;
+    const zeusScale = compact ? 0.7 : 0.72;
     this.zeus.group.scale.setScalar(zeusScale);
-    this.zeus.group.position.set(0, compact ? 3.85 : 3.75, -1.7);
+    this.zeus.group.position.set(0, compact ? 3.62 : 3.75, -1.7);
     this.zeus.baseY = this.zeus.group.position.y;
     this.zeus.group.rotation.y = 0;
 
@@ -336,7 +336,7 @@ export class Stage {
     const needW = boardW + 0.95;
     // Telefonda tahta **daha büyük** görünsün: dikey çerçeve daraltılır,
     // Dede biraz küçültülüp tahtaya yaklaştırılır (tepesi kesilmez).
-    const needH = compact ? 9.6 : 10.1;
+    const needH = compact ? 9.0 : 10.1;
     const distW = needW / (2 * tan * Math.max(0.25, aspect));
     const distH = needH / (2 * tan);
     const distance = clamp(Math.max(distW, distH), 9.2, 36);

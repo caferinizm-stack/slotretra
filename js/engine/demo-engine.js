@@ -54,6 +54,24 @@ export class DemoEngine {
     this._emit();
   }
 
+  /**
+   * Yerelde gerçek veri yok: örnek sıralama döner (`demo: true`).
+   * Yayında `supabase-engine.js` aynı biçimde **gerçek** satırlar verir.
+   */
+  async leaderboard() {
+    await wait(200);
+    return {
+      demo: true,
+      rows: [
+        { rank: 1, username: 'oryon', avatar_url: null, net: 1842000, won: 5210000, spins: 214, is_me: false },
+        { rank: 2, username: 'zeynep', avatar_url: null, net: 964500, won: 2730000, spins: 168, is_me: false },
+        { rank: 3, username: 'kaan', avatar_url: null, net: 512000, won: 1180000, spins: 96, is_me: true },
+        { rank: 4, username: 'elif', avatar_url: null, net: 208400, won: 640000, spins: 73, is_me: false },
+        { rank: 5, username: 'mert', avatar_url: null, net: 91250, won: 320000, spins: 41, is_me: false },
+      ],
+    };
+  }
+
   async spin(bet) {
     const inFree = this.free.left > 0;
     const amount = BETS.includes(bet) ? bet : BETS[0];

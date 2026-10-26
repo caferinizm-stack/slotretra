@@ -259,6 +259,35 @@ export class SupabaseEngine {
   buyBonus(bet) {
     return this._call('dede_buy_bonus', { p_bet: Math.round(bet) });
   }
+
+  /**
+   * Son **24 saat**in liderlik tablosu + kendi özetin.
+   * Sunucu tarafı: `supabase_dede_slot_liderlik.sql`.
+   */
+  async leaderboard(limit = 10) {
+    try {
+      const call = (fn, params) => this.client.rpc(fn, params);
+      let { data, error } = await call('dede_leaderboard', { p_limit: limit });
+      if (error && (await this._recoverAuth(error))) {
+        ({ data, error } = await call('dede_leaderboard', { p_limit: limit }));
+      }
+      if (error) {
+        const text = `${error.message ?? ''} ${error.details ?? ''}`;
+        if (/could not find the function|schema cache/i.test(text)) {
+          return { error: 'Liderlik tablosu sunucuda yok (supabase_dede_slot_liderlik.sql).' };
+        }
+        return { error: translateSupabaseError(error) };
+      }
+
+      let me = null;
+      const mine = await call('dede_leaderboard_me');
+      if (!mine.error) me = mine.data;
+
+      return { rows: Array.isArray(data) ? data : [], me, mode: 'live' };
+    } catch (error) {
+      return { error: translateSupabaseError(error) };
+    }
+  }
 }
 
 /** Yapılandırılmışsa Supabase motorunu kurar; değilse `null`. */

@@ -151,6 +151,8 @@ export function playSpin(bet, opts = {}) {
 
   const steps = [];
   let totalWin = 0;
+  /** Bonus: tur içinde **toplanan** ham kazanç (çarpan henüz uygulanmadı). */
+  let rawWin = 0;
 
   for (let index = 0; index < MAX_CASCADES; index += 1) {
     const clusters = clustersOf(grid, spinBet);
@@ -165,8 +167,14 @@ export function playSpin(bet, opts = {}) {
     }
 
     const stepWin = clusters.reduce((sum, cluster) => sum + cluster.win, 0);
-    const factor = inFree ? multiplier : orbSum;
-    const appliedWin = stepWin > 0 ? stepWin * Math.max(1, factor) : 0;
+    if (inFree) rawWin += stepWin;
+
+    // **Bonus kuralı:** sembol başına çarpan uygulanmaz; tüm semboller
+    // bittiğinde turun toplamı **toplam çarpanla** çarpılır (aşağıdaki
+    // `settle`). Temel oyunda ise her adımın kazancı o adımın küreleriyle
+    // çarpılır.
+    const appliedWin =
+      inFree || stepWin <= 0 ? 0 : stepWin * Math.max(1, orbSum);
 
     steps.push({
       grid: [...grid],
@@ -187,6 +195,14 @@ export function playSpin(bet, opts = {}) {
     grid = collapse(grid, cleared, random);
   }
 
+  /** Bonus turunun kapanışı: ham toplam × toplam çarpan. */
+  let settle = null;
+  if (inFree) {
+    const factor = Math.max(1, multiplier);
+    settle = { raw: rawWin, multiplier: factor, total: rawWin * factor };
+    totalWin += settle.total;
+  }
+
   const cap = spinBet * MAX_WIN_X;
   if (totalWin > cap) totalWin = cap;
 
@@ -197,6 +213,7 @@ export function playSpin(bet, opts = {}) {
     freeAwarded,
     free: { left: freeLeft, bet: inFree ? opts.free.bet : bet, multiplier },
     steps,
+    settle,
     totalWin,
     multiplierTotal: multiplier,
   };

@@ -39,6 +39,7 @@
         </div>
         <div class="top-right">
           <button class="help sound" id="sound" aria-label="Sesi aç/kapat" title="Ses">♪</button>
+          <button class="help board" id="board" aria-label="Liderlik tablosu" title="24 saatlik liderlik">🏆</button>
           <button class="help" id="help" aria-label="Nasıl oynanır?">?</button>
         </div>
       </header>
@@ -120,47 +121,6 @@
           </div>
         </div>
 
-        <!-- Nasıl oynanır + ödeme tablosu -->
-        <div class="overlay" id="help-overlay" hidden>
-          <div class="sheet help-sheet" role="dialog" aria-modal="true">
-            <h2>Nasıl oynanır?</h2>
-            <div class="help-body">
-              <ul class="help-list">
-              <li>
-                <b>Her yerde öde:</b> tahtada aynı sembolden <b>8 veya daha
-                fazla</b> varsa kazanır — hat gerekmez.
-              </li>
-              <li>
-                <b>Tumble:</b> kazanan semboller patlar, üstten yenileri düşer.
-                Aynı çevirişte zincirleme kazanabilirsin.
-              </li>
-              <li>
-                <b>Çarpan küreleri:</b> Dede elinden <b>x2 … x500</b> küre
-                fırlatır. O adımın kazancı kürelerin toplamıyla çarpılır.
-              </li>
-              <li>
-                <b>Ücretsiz tur:</b> <b>4+ Zeus</b> 15 tur açar; bonus boyunca
-                toplanan çarpanlar <b>birikir</b>.
-              </li>
-              <li>
-                <b>Bonus satın alma:</b> sağ alttaki mavi kartla bahsin
-                <b>100 katına</b> 15 tur alabilirsin.
-              </li>
-              </ul>
-              <div class="help-sub">Sembol ödemeleri (bahis katı, 8+ sembol)</div>
-              <div class="help-grid" id="help-symbols"></div>
-              <div class="help-bet" id="help-bet"></div>
-              <p class="help-note">
-                Her <b>ek sembol</b> ödemeyi 8'de 1 oranında artırır (16 sembol =
-                2× ödeme). Zeus (scatter) doğrudan ödeme yapmaz, bonus açar.
-              </p>
-            </div>
-            <div class="sheet-actions">
-              <button class="btn gold" id="help-close">Anladım</button>
-            </div>
-          </div>
-        </div>
-
         <!-- Açılış: oyun arkada kurulurken yükleme çubuğu -->
         <div class="stage-loading" id="stage-loading">
           <div class="boot-emblem">
@@ -180,6 +140,63 @@
           </div>
         </div>
       </main>
+
+      <!-- Yardım ve liderlik panelleri **tam ekran** açılır (kontrol
+           çubuğunun üstünde kalmış alanı da kullanır). -->
+      <div class="overlay full" id="board-overlay" hidden>
+        <div class="sheet board-sheet" role="dialog" aria-modal="true">
+          <h2>24 Saatin En İyileri</h2>
+          <p class="board-sub">Son 24 saatte en çok kazanan oyuncular. Tablo sürekli yenilenir.</p>
+          <div class="board-me" id="board-me" hidden></div>
+          <div class="board-list" id="board-list"></div>
+          <div class="sheet-actions">
+            <button class="btn ghost" id="board-refresh">Yenile</button>
+            <button class="btn gold" id="board-close">Kapat</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay full" id="help-overlay" hidden>
+        <div class="sheet help-sheet" role="dialog" aria-modal="true">
+          <h2>Nasıl oynanır?</h2>
+          <div class="help-body">
+            <ul class="help-list">
+              <li>
+                <b>Her yerde öde:</b> tahtada aynı sembolden <b>8 veya daha
+                fazla</b> varsa kazanır — hat gerekmez.
+              </li>
+              <li>
+                <b>Tumble:</b> kazanan semboller patlar, üstten yenileri düşer.
+                Aynı çevirişte zincirleme kazanabilirsin.
+              </li>
+              <li>
+                <b>Çarpan küreleri:</b> Dede <b>x2 … x500</b> küre fırlatır.
+                Temel oyunda o adımın kazancı küre toplamıyla çarpılır;
+                <b>bonus turunda</b> semboller bitince turun toplamı
+                <b>toplam çarpanla</b> çarpılır.
+              </li>
+              <li>
+                <b>Ücretsiz tur:</b> <b>4+ Zeus</b> 15 tur açar; bonus boyunca
+                toplanan çarpanlar <b>birikir</b>.
+              </li>
+              <li>
+                <b>Bonus satın alma:</b> sağ alttaki mavi kartla bahsin
+                <b>100 katına</b> 15 tur alabilirsin.
+              </li>
+            </ul>
+            <div class="help-sub">Sembol ödemeleri (bahis katı, 8+ sembol)</div>
+            <div class="help-grid" id="help-symbols"></div>
+            <div class="help-bet" id="help-bet"></div>
+            <p class="help-note">
+              Her <b>ek sembol</b> ödemeyi 8'de 1 oranında artırır (16 sembol =
+              2× ödeme). Zeus (scatter) doğrudan ödeme yapmaz, bonus açar.
+            </p>
+          </div>
+          <div class="sheet-actions">
+            <button class="btn gold" id="help-close">Anladım</button>
+          </div>
+        </div>
+      </div>
 
       <!-- ── Alt kontrol paneli ───────────────────────────────────────── -->
       <footer class="controls">
