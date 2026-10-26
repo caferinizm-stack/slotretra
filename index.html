@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"
+    />
+    <title>Retra · Şanslı Dede</title>
+    <meta
+      name="description"
+      content="Olympos'un kapıları: 6x5 3D slot, her yerde ödeme, çarpan küreleri ve 15 ücretsiz tur."
+    />
+    <meta name="theme-color" content="#0a0714" />
+    <link rel="icon" type="image/jpeg" href="./assets/sanslidede.jpg" />
+    <link rel="apple-touch-icon" href="./assets/sanslidede.jpg" />
+    <link rel="stylesheet" href="./css/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.169.0/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="app">
+      <!-- ── Üst şerit: oyun adı + bakiye + yardım ────────────────────── -->
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <img src="./assets/sanslidede.jpg" alt="" />
+          </span>
+          <span class="brand-text">
+            <b>Şanslı Dede</b>
+            <small>OLYMPOS KAPILARI</small>
+          </span>
+        </div>
+        <div class="top-right">
+          <!-- Kazanç **ana bakiyeye** eklenir; burada yalnız kısa süreli
+               "+N" baloncuğu belirir (ikinci bir bakiye gösterilmez). -->
+          <span class="balance-gain" id="balance-gain" hidden></span>
+          <div class="pill balance" id="balance-pill" title="Kristal bakiyen">
+            <img class="coin" src="./assets/kristal.png" alt="" />
+            <span id="balance">0</span>
+          </div>
+          <button class="help sound" id="sound" aria-label="Sesi aç/kapat" title="Ses">♪</button>
+          <button class="help" id="help" aria-label="Nasıl oynanır?">?</button>
+        </div>
+      </header>
+
+      <!-- ── Sahne ─────────────────────────────────────────────────────── -->
+      <main class="stage" id="stage">
+        <canvas id="scene" aria-label="3D slot tahtası"></canvas>
+
+        <div class="stage-hud">
+          <div class="hud-left">
+            <div class="free-badge" id="free-badge" hidden>
+              <span class="free-icon">∞</span>
+              <span>
+                <b id="free-left">15</b>
+                <small>ÜCRETSİZ TUR</small>
+              </span>
+            </div>
+            <!-- Bonus boyunca biriken çarpanlar (toplanır, sıfırlanmaz) -->
+            <div class="mult-box" id="mult-box" hidden>
+              <div class="mult-box-head">
+                <small>ÇARPAN</small>
+                <b id="mult-box-total">x2</b>
+              </div>
+              <div class="mult-box-items" id="mult-box-items"></div>
+            </div>
+          </div>
+          <div class="hud-right">
+            <!-- Bonus kazancı ayrı havuzda durur, bonus bitince bakiyeye geçer -->
+            <div class="bonus-pool" id="bonus-pool" hidden>
+              <small>BONUS KAZANCI</small>
+              <b>
+                <img class="coin" src="./assets/kristal.png" alt="" />
+                <span id="bonus-pool-value">0</span>
+              </b>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tur içi bilgi: scatter sayacı -->
+        <div class="scatter-hint" id="scatter-hint" hidden>
+          <span class="bolt">⚡</span>
+          <span id="scatter-text">0 / 4</span>
+        </div>
+
+        <!-- Büyük kazanç etiketi (sahnenin ortasında) -->
+        <div class="big-win" id="big-win" hidden>
+          <small>BÜYÜK KAZANÇ</small>
+          <b id="big-win-value">0</b>
+        </div>
+
+        <!-- Bonus girişi: satın alınca/ tetiklenince 3 sn ortada durur -->
+        <div class="free-intro" id="free-intro" hidden>
+          <span class="free-intro-rays"></span>
+          <small>BONUS TURU</small>
+          <b id="free-intro-count">15</b>
+          <span class="free-intro-label">FREE SPIN</span>
+        </div>
+
+        <!-- Bonus sonu: ortada "KAZANDIN" + bonus kazancı (3 sn) -->
+        <div class="bonus-end" id="bonus-end" hidden>
+          <small>BONUS TAMAMLANDI</small>
+          <h2>KAZANDIN</h2>
+          <div class="bonus-end-amount">
+            <img class="coin" src="./assets/kristal.png" alt="" />
+            <b id="bonus-end-value">0</b>
+          </div>
+          <p>Bakiyene ekleniyor…</p>
+        </div>
+
+        <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+        <!-- Onay paneli -->
+        <div class="overlay" id="overlay" hidden>
+          <div class="sheet" id="overlay-sheet" role="dialog" aria-modal="true">
+            <h2 id="overlay-title">Başlık</h2>
+            <p id="overlay-body">…</p>
+            <div class="sheet-actions">
+              <button class="btn ghost" id="overlay-cancel">Vazgeç</button>
+              <button class="btn gold" id="overlay-ok">Tamam</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nasıl oynanır + ödeme tablosu -->
+        <div class="overlay" id="help-overlay" hidden>
+          <div class="sheet help-sheet" role="dialog" aria-modal="true">
+            <h2>Nasıl oynanır?</h2>
+            <ul class="help-list">
+              <li>
+                <b>Her yerde öde:</b> tahtada aynı sembolden <b>8 veya daha
+                fazla</b> varsa kazanır — hat gerekmez.
+              </li>
+              <li>
+                <b>Tumble:</b> kazanan semboller patlar, üstten yenileri düşer.
+                Aynı çevirişte zincirleme kazanabilirsin.
+              </li>
+              <li>
+                <b>Çarpan küreleri:</b> Dede elinden <b>x2 … x500</b> küre
+                fırlatır. O adımın kazancı kürelerin toplamıyla çarpılır.
+              </li>
+              <li>
+                <b>Ücretsiz tur:</b> <b>4+ Zeus</b> 15 tur açar; bonus boyunca
+                toplanan çarpanlar <b>birikir</b>.
+              </li>
+              <li>
+                <b>Bonus satın alma:</b> sağ alttaki mavi kartla bahsin
+                <b>100 katına</b> 15 tur alabilirsin.
+              </li>
+            </ul>
+            <div class="help-sub">Sembol ödemeleri (bahis katı, 8+ sembol)</div>
+            <div class="help-grid" id="help-symbols"></div>
+            <div class="help-bet" id="help-bet"></div>
+            <p class="help-note">
+              Her <b>ek sembol</b> ödemeyi 8'de 1 oranında artırır (16 sembol =
+              2× ödeme). Zeus (scatter) doğrudan ödeme yapmaz, bonus açar.
+            </p>
+            <div class="sheet-actions">
+              <button class="btn gold" id="help-close">Anladım</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Açılış: oyun arkada kurulurken yükleme çubuğu -->
+        <div class="stage-loading" id="stage-loading">
+          <div class="boot-emblem">
+            <img src="./assets/sanslidede.jpg" alt="Şanslı Dede" />
+          </div>
+          <h1 id="boot-title">Oyun yükleniyor</h1>
+          <p id="boot-note">Olympos'un kapıları açılıyor…</p>
+          <div
+            class="boot-bar"
+            id="boot-progress"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="5"
+          >
+            <span id="boot-fill"></span>
+          </div>
+        </div>
+      </main>
+
+      <!-- ── Alt kontrol paneli ───────────────────────────────────────── -->
+      <footer class="controls">
+        <div class="control-row">
+          <div class="bet-box">
+            <button id="bet-down" aria-label="Bahsi azalt">−</button>
+            <span class="bet-value">
+              <small>BAHİS</small>
+              <b id="bet">1.000</b>
+            </span>
+            <button id="bet-up" aria-label="Bahsi artır">+</button>
+          </div>
+
+          <button class="spin" id="spin" aria-label="Çevir">
+            <span class="spin-glow"></span>
+            <span class="spin-label">ÇEVİR</span>
+          </button>
+
+          <button class="buy" id="buy" title="Bahsin 100 katına 15 ücretsiz tur">
+            <span class="buy-shine" aria-hidden="true"></span>
+            <span class="buy-badge">BONUS</span>
+            <span class="buy-title">15 TUR</span>
+            <span class="buy-bottom">
+              <img class="coin" src="./assets/kristal.png" alt="" />
+              <b id="buy-cost">100K</b>
+            </span>
+          </button>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "entrypoint": "index",
+  "compatibilityDate": "2026-10-26",
+  "modules": [
+    {
+      "name": "index",
+      "type": "esm",
+      "path": "./index.html"
+    }
+  ],
+  "assetsDirectory": "./",
+  "spa": true
+}
