@@ -20,7 +20,7 @@ import {
   SYMBOL_BY_ID,
   WIN_NOTICE_MIN,
 } from './config.js';
-import { formatCoins, shortCoins, wait } from './core/utils.js';
+import { formatCoins, wait } from './core/utils.js';
 import { Sound } from './core/audio.js';
 import { createEngine } from './engine/index.js';
 import { Stage } from './scene/stage.js';

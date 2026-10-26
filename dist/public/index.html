@@ -25,25 +25,19 @@
   </head>
   <body>
     <div class="app">
-      <!-- ── Üst şerit: oyun adı + bakiye + yardım ────────────────────── -->
+      <!-- ── Üst şerit: bakiye + ses + yardım ─────────────────────────── -->
       <header class="topbar">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true">
-            <img src="./assets/sanslidede.jpg" alt="" />
-          </span>
-          <span class="brand-text">
-            <b>Şanslı Dede</b>
-            <small>OLYMPOS KAPILARI</small>
-          </span>
-        </div>
-        <div class="top-right">
-          <!-- Kazanç **ana bakiyeye** eklenir; burada yalnız kısa süreli
-               "+N" baloncuğu belirir (ikinci bir bakiye gösterilmez). -->
-          <span class="balance-gain" id="balance-gain" hidden></span>
+        <!-- Oyun adı/ikonu yok: sol tarafta doğrudan **gerçek bakiye**. -->
+        <div class="top-left">
           <div class="pill balance" id="balance-pill" title="Kristal bakiyen">
             <img class="coin" src="./assets/kristal.png" alt="" />
             <span id="balance">0</span>
           </div>
+          <!-- Kazanç **ana bakiyeye** eklenir; burada yalnız kısa süreli
+               "+N" baloncuğu belirir (ikinci bir bakiye gösterilmez). -->
+          <span class="balance-gain" id="balance-gain" hidden></span>
+        </div>
+        <div class="top-right">
           <button class="help sound" id="sound" aria-label="Sesi aç/kapat" title="Ses">♪</button>
           <button class="help" id="help" aria-label="Nasıl oynanır?">?</button>
         </div>
@@ -62,13 +56,11 @@
                 <small>ÜCRETSİZ TUR</small>
               </span>
             </div>
-            <!-- Bonus boyunca biriken çarpanlar (toplanır, sıfırlanmaz) -->
+            <!-- Bonus çarpanı: **tek sabit rakam**; yeni çarpan geldikçe
+                 rakam büyür (altta birikmez, yer kaplamaz). -->
             <div class="mult-box" id="mult-box" hidden>
-              <div class="mult-box-head">
-                <small>ÇARPAN</small>
-                <b id="mult-box-total">x2</b>
-              </div>
-              <div class="mult-box-items" id="mult-box-items"></div>
+              <small>ÇARPAN</small>
+              <b id="mult-box-total">x2</b>
             </div>
           </div>
           <div class="hud-right">
@@ -132,7 +124,8 @@
         <div class="overlay" id="help-overlay" hidden>
           <div class="sheet help-sheet" role="dialog" aria-modal="true">
             <h2>Nasıl oynanır?</h2>
-            <ul class="help-list">
+            <div class="help-body">
+              <ul class="help-list">
               <li>
                 <b>Her yerde öde:</b> tahtada aynı sembolden <b>8 veya daha
                 fazla</b> varsa kazanır — hat gerekmez.
@@ -153,14 +146,15 @@
                 <b>Bonus satın alma:</b> sağ alttaki mavi kartla bahsin
                 <b>100 katına</b> 15 tur alabilirsin.
               </li>
-            </ul>
-            <div class="help-sub">Sembol ödemeleri (bahis katı, 8+ sembol)</div>
-            <div class="help-grid" id="help-symbols"></div>
-            <div class="help-bet" id="help-bet"></div>
-            <p class="help-note">
-              Her <b>ek sembol</b> ödemeyi 8'de 1 oranında artırır (16 sembol =
-              2× ödeme). Zeus (scatter) doğrudan ödeme yapmaz, bonus açar.
-            </p>
+              </ul>
+              <div class="help-sub">Sembol ödemeleri (bahis katı, 8+ sembol)</div>
+              <div class="help-grid" id="help-symbols"></div>
+              <div class="help-bet" id="help-bet"></div>
+              <p class="help-note">
+                Her <b>ek sembol</b> ödemeyi 8'de 1 oranında artırır (16 sembol =
+                2× ödeme). Zeus (scatter) doğrudan ödeme yapmaz, bonus açar.
+              </p>
+            </div>
             <div class="sheet-actions">
               <button class="btn gold" id="help-close">Anladım</button>
             </div>

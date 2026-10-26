@@ -10,7 +10,8 @@ fırlattığı çarpan küreleri ve 15 turluk ücretsiz tur bonusu.
   yüklenir; tüm modeller/dokular tarayıcıda üretilir.
 - **RTP:** %98,4 (1,67 milyon tur simülasyonu, bahis 1.000 · `tools/simulate.mjs`).
 
-**Yayındaki adres:** <https://site-10a82944ff094219a7a706bb867c06de.freebuff.page>
+**Yayındaki adres:** <https://caferinizm-stack.github.io/slotretra/>
+(GitHub Pages · `slot_web/` klasörünün kökü doğrudan servis edilir.)
 
 Uygulama bu sayfayı at yarışı gibi **yarım ekran panelde** açar:
 Şans Oyunları ▸ **Şanslı Dede** kartı ya da odadaki **Şans oyunları** menüsü.

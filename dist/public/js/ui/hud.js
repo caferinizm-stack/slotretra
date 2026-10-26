@@ -31,7 +31,6 @@ export class Hud {
       freeLeft: $('free-left'),
       multBox: $('mult-box'),
       multBoxTotal: $('mult-box-total'),
-      multBoxItems: $('mult-box-items'),
       bonusPool: $('bonus-pool'),
       bonusPoolValue: $('bonus-pool-value'),
       bonusEnd: $('bonus-end'),
@@ -51,6 +50,7 @@ export class Hud {
       cancel: $('overlay-cancel'),
       helpButton: $('help'),
       helpOverlay: $('help-overlay'),
+      helpBody: document.querySelector('.help-body'),
       helpSymbols: $('help-symbols'),
       helpBet: $('help-bet'),
       helpClose: $('help-close'),
@@ -67,7 +67,6 @@ export class Hud {
     this._countRaf = 0;
     this._toasts = [];
     this._busy = false;
-    this._multValues = [];
 
     this._bind(onSpin, onBet, onBuy, onSound);
     this.setBet(this.bet);
@@ -102,6 +101,8 @@ export class Hud {
     // Yardım: oyun ortasında açılır, oyunu duraklatmaz.
     this.el.helpButton?.addEventListener('click', () => {
       this.el.helpOverlay.hidden = false;
+      // Panel **baştan** okunsun (önceki kaydırma konumu kalmasın).
+      if (this.el.helpBody) this.el.helpBody.scrollTop = 0;
     });
     this.el.helpClose?.addEventListener('click', () => {
       this.el.helpOverlay.hidden = true;
@@ -221,30 +222,20 @@ export class Hud {
   }
 
   /**
-   * Bonus çarpan kutusu: bonus boyunca **toplanır** (sıfırlanmaz).
+   * Bonus çarpanı: **tek sabit rakam**. Yeni çarpan geldikçe rakam büyür;
+   * altta kırılım listesi tutulmaz (yer kaplamaz).
    * @param {number} value toplam çarpan
-   * @param {Array<number>} [values] kırılım (x2, x5 …)
+   * @param {Array<number>} [_values] eski çağrılarla uyum (kullanılmaz)
    * @param {boolean} [persistent] true → bonus boyunca kutu **hep görünür**
    */
-  setMultiplier(value, values = null, persistent = false) {
+  setMultiplier(value, _values = null, persistent = false) {
     const multiplier = Math.max(0, Math.round(Number(value) || 0));
     this.el.multBox.hidden = !persistent && multiplier <= 1;
     if (multiplier <= 1) {
-      this._multValues = [];
-      if (this.el.multBoxItems) this.el.multBoxItems.innerHTML = '';
       if (persistent) this.el.multBoxTotal.textContent = 'x1';
       return;
     }
     this.el.multBoxTotal.textContent = `x${multiplier}`;
-    if (values) {
-      this._multValues = values.slice(-12);
-      this.el.multBoxItems.innerHTML = '';
-      for (const v of this._multValues) {
-        const chip = document.createElement('span');
-        chip.textContent = `x${v}`;
-        this.el.multBoxItems.appendChild(chip);
-      }
-    }
     const box = this.el.multBox;
     box.classList.remove('bump');
     void box.offsetWidth;
