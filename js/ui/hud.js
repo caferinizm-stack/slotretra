@@ -481,7 +481,7 @@ export class Hud {
     if (this.el.boardSub) {
       this.el.boardSub.textContent = demo
         ? 'Demo sıralama — yayında gerçek oyuncular görünür.'
-        : "Bugün en çok kazanan oyuncular. Tablo her gün 00:00'da sıfırlanır.";
+        : "Bugün en çok kristal kazananlar. Tablo her gün 00:00'da sıfırlanır.";
     }
 
     if (!rows.length) {
@@ -524,9 +524,7 @@ export class Hud {
       who.append(
         Object.assign(document.createElement('b'), { textContent: name }),
         Object.assign(document.createElement('small'), {
-          textContent: `${shortCoins(Number(row.spins) || 0)} tur · ${shortCoins(
-            Number(row.won) || 0,
-          )} kristal kazandı`,
+          textContent: `${shortCoins(Number(row.spins) || 0)} tur`,
         }),
       );
       line.appendChild(who);
@@ -537,7 +535,8 @@ export class Hud {
       coin.className = 'coin';
       coin.src = CRYSTAL_ASSET;
       coin.alt = '';
-      net.append(coin, document.createTextNode(`+${shortCoins(Number(row.net) || 0)}`));
+      // Sıralama **kazanılan kristale** göre (FAZ 72).
+      net.append(coin, document.createTextNode(`+${shortCoins(Number(row.won) || 0)}`));
       line.appendChild(net);
 
       list.appendChild(line);
@@ -554,7 +553,7 @@ export class Hud {
         const left = document.createElement('span');
         left.textContent = me.rank > 0 ? `Sıran #${me.rank}` : 'Sıralamada değilsin';
         const right = document.createElement('b');
-        right.textContent = `${net >= 0 ? '+' : ''}${shortCoins(net)} · ${shortCoins(spins)} tur`;
+        right.textContent = `+${shortCoins(Number(me?.won) || 0)} · ${shortCoins(spins)} tur`;
         box.append(left, right);
       } else {
         box.hidden = true;
