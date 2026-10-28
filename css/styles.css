@@ -1624,3 +1624,88 @@ body {
 .big-win {
   will-change: transform, opacity;
 }
+
+/* ═══ Yardım ve liderlik: ekrana sığmayan içerik **kayar** ═══════════════════
+   Panel ekran yüksekliğiyle sınırlanır; başlık ve düğmeler sabit kalır,
+   arada liste / açıklama parmakla kaydırılır. */
+
+.overlay.full {
+  align-items: center;
+  padding: 10px;
+}
+
+.overlay.full .sheet {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 20px);
+  max-height: calc(100dvh - 20px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.overlay.full .sheet > h2,
+.overlay.full .sheet > .board-sub,
+.overlay.full .sheet > .board-timer,
+.overlay.full .sheet > .board-me,
+.overlay.full .sheet > .sheet-actions {
+  flex: 0 0 auto;
+}
+
+.board-list,
+.help-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding-right: 4px;
+  margin-right: -4px;
+}
+
+.board-list {
+  max-height: none;
+}
+
+.board-list::-webkit-scrollbar,
+.help-body::-webkit-scrollbar {
+  width: 3px;
+}
+
+.board-list::-webkit-scrollbar-thumb,
+.help-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 209, 102, 0.35);
+  border-radius: 3px;
+}
+
+/* Günlük sıfırlanma geri sayımı. */
+.board-timer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 2px 0 8px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: linear-gradient(120deg, rgba(139, 107, 255, 0.22), rgba(255, 209, 102, 0.12));
+  border: 1px solid rgba(255, 209, 102, 0.3);
+  font-size: 11px;
+  color: #d9d0ff;
+}
+
+.board-timer b {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: #ffe9b8;
+}
+
+.board-timer.soon b {
+  color: #ff8a9a;
+}
+
+.board-row,
+.board-empty {
+  flex-shrink: 0;
+}

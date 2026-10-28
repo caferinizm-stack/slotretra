@@ -62,6 +62,8 @@ export class Hud {
       boardClose: $('board-close'),
       boardRefresh: $('board-refresh'),
       boardSub: document.querySelector('.board-sub'),
+      boardTimer: $('board-timer'),
+      boardTimerValue: $('board-timer-value'),
       boot: $('stage-loading'),
       bootFill: $('boot-fill'),
       bootNote: $('boot-note'),
@@ -116,10 +118,14 @@ export class Hud {
       this._onLeaderboard?.();
     });
     this.el.boardClose?.addEventListener('click', () => {
+      this._stopBoardTimer();
       this.el.boardOverlay.hidden = true;
     });
     this.el.boardOverlay?.addEventListener('click', (event) => {
-      if (event.target === this.el.boardOverlay) this.el.boardOverlay.hidden = true;
+      if (event.target === this.el.boardOverlay) {
+        this._stopBoardTimer();
+        this.el.boardOverlay.hidden = true;
+      }
     });
 
     // Yardım: oyun ortasında açılır, oyunu duraklatmaz.
@@ -434,21 +440,54 @@ export class Hud {
   }
 
   /** Sunucudan gelen satırları çizer. */
-  setLeaderboard({ rows = [], me = null, demo = false } = {}) {
+  /** Günlük sıfırlanmaya kalan süre (her saniye yenilenir). */
+  _startBoardTimer(resetsAt, offset = 0) {
+    this._stopBoardTimer();
+    const box = this.el.boardTimer;
+    const value = this.el.boardTimerValue;
+    if (!box || !value || !resetsAt) {
+      if (box) box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    const pad = (n) => String(n).padStart(2, '0');
+    const tick = () => {
+      const left = Math.max(0, resetsAt - (Date.now() + offset));
+      const total = Math.floor(left / 1000);
+      value.textContent = `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+      box.classList.toggle('soon', total <= 600);
+      // Süre dolunca tablo sıfırlanmış olur: yeniden yükle.
+      if (left <= 0) {
+        this._stopBoardTimer();
+        setTimeout(() => this._onLeaderboard?.(), 1500);
+      }
+    };
+    tick();
+    this._boardTimer = setInterval(tick, 1000);
+  }
+
+  _stopBoardTimer() {
+    if (this._boardTimer) clearInterval(this._boardTimer);
+    this._boardTimer = 0;
+  }
+
+  setLeaderboard({ rows = [], me = null, demo = false, resetsAt = 0, offset = 0 } = {}) {
     const list = this.el.boardList;
     if (!list) return;
     list.textContent = '';
+    list.scrollTop = 0;
+    this._startBoardTimer(resetsAt, offset);
 
     if (this.el.boardSub) {
       this.el.boardSub.textContent = demo
         ? 'Demo sıralama — yayında gerçek oyuncular görünür.'
-        : 'Son 24 saatte en çok kazanan oyuncular. Tablo sürekli yenilenir.';
+        : "Bugün en çok kazanan oyuncular. Tablo her gün 00:00'da sıfırlanır.";
     }
 
     if (!rows.length) {
       const empty = document.createElement('div');
       empty.className = 'board-empty';
-      empty.textContent = 'Son 24 saatte henüz kazanan yok. İlk sırayı sen kap! ';
+      empty.textContent = 'Bugün henüz kazanan yok. İlk sırayı sen kap! ';
       empty.append(Object.assign(document.createElement('b'), { textContent: '🏆' }));
       list.appendChild(empty);
     }

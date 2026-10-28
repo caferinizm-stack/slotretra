@@ -39,7 +39,7 @@
         </div>
         <div class="top-right">
           <button class="help sound" id="sound" aria-label="Sesi aç/kapat" title="Ses">♪</button>
-          <button class="help board" id="board" aria-label="Liderlik tablosu" title="24 saatlik liderlik">🏆</button>
+          <button class="help board" id="board" aria-label="Liderlik tablosu" title="Günlük liderlik">🏆</button>
           <button class="help" id="help" aria-label="Nasıl oynanır?">?</button>
         </div>
       </header>
@@ -145,8 +145,12 @@
            çubuğunun üstünde kalmış alanı da kullanır). -->
       <div class="overlay full" id="board-overlay" hidden>
         <div class="sheet board-sheet" role="dialog" aria-modal="true">
-          <h2>24 Saatin En İyileri</h2>
-          <p class="board-sub">Son 24 saatte en çok kazanan oyuncular. Tablo sürekli yenilenir.</p>
+          <h2>Günün En İyileri</h2>
+          <p class="board-sub">Bugün en çok kazanan oyuncular. Tablo her gün 00:00'da sıfırlanır.</p>
+          <div class="board-timer" id="board-timer" hidden>
+            <span>Sıralama sıfırlanmasına</span>
+            <b id="board-timer-value">--:--:--</b>
+          </div>
           <div class="board-me" id="board-me" hidden></div>
           <div class="board-list" id="board-list"></div>
           <div class="sheet-actions">
@@ -176,7 +180,7 @@
                 <b>toplam çarpanla</b> çarpılır.
               </li>
               <li>
-                <b>Ücretsiz tur:</b> <b>4+ Zeus</b> 15 tur açar; bonus boyunca
+                <b>Ücretsiz tur:</b> <b>4+ Şanslı Dede</b> 15 tur açar; bonus boyunca
                 toplanan çarpanlar <b>birikir</b>.
               </li>
               <li>
@@ -189,7 +193,7 @@
             <div class="help-bet" id="help-bet"></div>
             <p class="help-note">
               Her <b>ek sembol</b> ödemeyi 8'de 1 oranında artırır (16 sembol =
-              2× ödeme). Zeus (scatter) doğrudan ödeme yapmaz, bonus açar.
+              2× ödeme). Şanslı Dede (scatter) doğrudan ödeme yapmaz, bonus açar.
             </p>
           </div>
           <div class="sheet-actions">

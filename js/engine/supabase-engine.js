@@ -227,6 +227,8 @@ export class SupabaseEngine {
         left: Number(payload.free.left ?? 0) || 0,
         bet: Number(payload.free.bet ?? 0) || 0,
         multiplier: Number(payload.free.multiplier ?? 0) || 0,
+        // Bonus boyunca biriken kazanç (oyundan çıkıp girince devam için).
+        won: Number(payload.free.won ?? 0) || 0,
       };
     }
   }
@@ -283,7 +285,17 @@ export class SupabaseEngine {
       const mine = await call('dede_leaderboard_me');
       if (!mine.error) me = mine.data;
 
-      return { rows: Array.isArray(data) ? data : [], me, mode: 'live' };
+      // Günlük sıfırlanma anı (sunucu saatiyle hizalı geri sayım).
+      let resetsAt = 0;
+      let offset = 0;
+      const period = await call('dede_leaderboard_period');
+      if (!period.error && period.data) {
+        resetsAt = Date.parse(period.data.resets_at) || 0;
+        const serverNow = Date.parse(period.data.server_now) || 0;
+        if (serverNow) offset = serverNow - Date.now();
+      }
+
+      return { rows: Array.isArray(data) ? data : [], me, mode: 'live', resetsAt, offset };
     } catch (error) {
       return { error: translateSupabaseError(error) };
     }

@@ -60,8 +60,12 @@ export class DemoEngine {
    */
   async leaderboard() {
     await wait(200);
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
     return {
       demo: true,
+      resetsAt: midnight.getTime(),
+      offset: 0,
       rows: [
         { rank: 1, username: 'oryon', avatar_url: null, net: 1842000, won: 5210000, spins: 214, is_me: false },
         { rank: 2, username: 'zeynep', avatar_url: null, net: 964500, won: 2730000, spins: 168, is_me: false },

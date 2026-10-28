@@ -108,7 +108,7 @@ class Game {
       return;
     }
     try {
-      const result = await engine.leaderboard(10);
+      const result = await engine.leaderboard(50);
       if (result?.error) this.hud.failLeaderboard(result.error);
       else this.hud.setLeaderboard(result);
     } catch (error) {
@@ -166,6 +166,13 @@ class Game {
 
     this.startLoop();
     this.bindKeys();
+
+    // **Yarım kalan bonus**: oyundan bonus sırasında çıkıldıysa, geri gelince
+    // turlar kaldığı yerden kendiliğinden devam eder (sunucu turları ve
+    // biriken kazancı saklar).
+    if ((this.engine.free?.left ?? 0) > 0 && !this.engine.needsLogin) {
+      setTimeout(() => this.runSession({ resume: true }), 900);
+    }
   }
 
   /**
@@ -178,7 +185,7 @@ class Game {
       name: symbol.name,
       pay: symbol.scatter ? 'BONUS' : `×${payText(symbol.pay)}`,
       extra: symbol.scatter
-        ? '4+ Zeus 15 ücretsiz tur açar'
+        ? '4+ Şanslı Dede 15 ücretsiz tur açar'
         : `${formatCoins(Math.floor(bet * symbol.pay))} kristal (8 sembol)`,
     }));
     const top = SYMBOLS.filter((s) => !s.scatter).reduce(
@@ -235,8 +242,10 @@ class Game {
 
   // ── Oturum: çeviriş(ler) + otomatik bonus turu ──────────────────────────
 
-  async runSession({ buy = false } = {}) {
+  async runSession({ buy = false, resume = false } = {}) {
     if (this.playing || !this.engine) return;
+    // Bonus turları bekliyorsa ÇEVİR de bonusu kaldığı yerden sürdürür.
+    if (!buy && !resume && (this.engine.free?.left ?? 0) > 0) resume = true;
     if (this.engine.mode === 'live' && this.engine.needsLogin) {
       this.hud.toast('Oturum bulunamadı. Uygulamaya dönüp tekrar aç.', 'error');
       return;
@@ -252,12 +261,27 @@ class Game {
     let bonusStarted = false;
 
     try {
-      // Eski semboller tablonun içinde aşağı düşerken sunucu cevabı gelir
-      // (bekleme hissi olmaz).
-      this.dropOut();
-      let response = buy
-        ? await this.engine.buyBonus(this.hud.bet)
-        : await this.engine.spin(this.hud.bet);
+      let response;
+      if (resume) {
+        // Kaldığı yerden: önceki bonus kazancı havuza geri yüklenir.
+        const free = { ...this.engine.free };
+        this.beginBonus();
+        this.bonusPool = Number(free.won) || 0;
+        this.hud.setBonusPool(this.bonusPool);
+        if (free.multiplier > 0) this.hud.setMultiplier(free.multiplier, [], true);
+        this.hud.setFree(free);
+        bonusStarted = true;
+        this.hud.toast(`Bonus kaldığı yerden devam ediyor · ${free.left} tur`, 'success');
+        await this.hud.showFreeIntro(free.left, 1800);
+        response = { script: { free }, balance: this.engine.balance };
+      } else {
+        // Eski semboller tablonun içinde aşağı düşerken sunucu cevabı gelir
+        // (bekleme hissi olmaz).
+        this.dropOut();
+        response = buy
+          ? await this.engine.buyBonus(this.hud.bet)
+          : await this.engine.spin(this.hud.bet);
+      }
 
       if (response.error) {
         this.hud.toast(response.error, 'error');
@@ -274,11 +298,13 @@ class Game {
         await this.hud.showFreeIntro(FREE_SPINS, 3000);
       }
 
-      await this.playScript(response.script, response.balance, true, buy ? 'bonus' : 'base');
+      if (!resume) {
+        await this.playScript(response.script, response.balance, true, buy ? 'bonus' : 'base');
+      }
 
       // Doğal tetikleme (4+ Zeus): sembollü dedeler yanıp sönsün, sonra bonus.
       const award = response.script.freeAwarded ?? 0;
-      if (!buy && award > 0) {
+      if (!buy && !resume && award > 0) {
         this.sound.bonus();
         await this.stage.grid.celebrateScatters();
         this.stage.zeus.cast(2);

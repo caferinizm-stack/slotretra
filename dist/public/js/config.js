@@ -94,7 +94,7 @@ export const SYMBOLS = [
   { id: 'hourglass', name: 'Kum Saati', weight: 5, pay: 1.5, tier: 7 },
   { id: 'crown', name: 'Taç', weight: 2, pay: 2.55, tier: 8 },
   // Scatter: kazancı yok; 4+ tanesi bonus turu açar.
-  { id: 'zeus', name: 'Zeus', weight: 3, pay: 0, tier: 9, scatter: true },
+  { id: 'zeus', name: 'Şanslı Dede', weight: 3, pay: 0, tier: 9, scatter: true },
 ];
 
 export const SYMBOL_BY_ID = new Map(SYMBOLS.map((s) => [s.id, s]));
