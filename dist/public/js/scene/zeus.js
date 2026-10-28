@@ -105,6 +105,39 @@ export class Zeus {
     this.anchor.position.set(0, -0.36, 0.24);
     this.handRight.add(this.anchor);
 
+    // ── Kollar: omuzdan ellere **bağlı** üst kol (3B tüp) ───────────────────
+    // Eller artık havada durmaz: Dede'nin omzundan çıkan kol, elin bileğindeki
+    // ön kola bağlanır. Sağ el kalkınca kol da onunla kalkar.
+    this.elbowRight = new THREE.Object3D();
+    this.elbowRight.position.set(-0.01, -0.02, -0.05);
+    this.handRight.add(this.elbowRight);
+    this.elbowLeft = new THREE.Object3D();
+    this.elbowLeft.position.set(0.01, -0.02, -0.05);
+    this.handLeft.add(this.elbowLeft);
+    this.shoulderRight = new THREE.Object3D();
+    this.shoulderRight.position.set(1.42, -0.98, 0.05);
+    this.group.add(this.shoulderRight);
+    this.shoulderLeft = new THREE.Object3D();
+    this.shoulderLeft.position.set(-1.42, -0.98, 0.05);
+    this.group.add(this.shoulderLeft);
+
+    this.armMaterial = new THREE.MeshStandardMaterial({
+      color: 0xf3c29a,
+      roughness: 0.5,
+      metalness: 0.02,
+      emissive: new THREE.Color(0x8a4a26),
+      emissiveIntensity: 0.6,
+    });
+    this.bandMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffc857,
+      roughness: 0.25,
+      metalness: 0.9,
+      emissive: new THREE.Color(0x6a3d00),
+      emissiveIntensity: 0.5,
+    });
+    this.arms = [this._buildArm(1), this._buildArm(-1)];
+    for (const arm of this.arms) this.hands.add(arm.group);
+
     this.time = 0;
     this.baseY = 0;
     this.handBaseY = 3.45;
@@ -127,6 +160,58 @@ export class Zeus {
     this.handBaseY = centerY ?? topY + HAND_H / 2 - 0.32;
     this.handLeft.position.set(-x, this.handBaseY, 0);
     this.handRight.position.set(x, this.handBaseY, 0);
+  }
+
+  _buildArm(side) {
+    const group = new THREE.Group();
+    const mesh = new THREE.Mesh(new THREE.BufferGeometry(), this.armMaterial);
+    mesh.renderOrder = 5;
+    group.add(mesh);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.205, 0.05, 8, 20), this.bandMaterial);
+    group.add(band);
+    const pad = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 12), this.bandMaterial);
+    pad.scale.set(1, 0.8, 1);
+    group.add(pad);
+    return {
+      side,
+      group,
+      mesh,
+      band,
+      pad,
+      last: new THREE.Vector3(1e9, 0, 0),
+      s: new THREE.Vector3(),
+      e: new THREE.Vector3(),
+    };
+  }
+
+  /** Kolun tüpünü omuz → dirsek (elin ön kolu) arasında yeniden kurar. */
+  _updateArm(arm) {
+    const shoulder = arm.side > 0 ? this.shoulderRight : this.shoulderLeft;
+    const elbow = arm.side > 0 ? this.elbowRight : this.elbowLeft;
+    shoulder.getWorldPosition(arm.s);
+    elbow.getWorldPosition(arm.e);
+    // Sahne yerel → `hands` grubu yereli.
+    this.hands.worldToLocal(arm.s);
+    this.hands.worldToLocal(arm.e);
+    const key = arm.e.x * 7 + arm.e.y * 13 + arm.e.z * 17 + arm.s.y * 19;
+    if (Math.abs(key - arm.last.x) < 0.002) return;
+    arm.last.x = key;
+
+    // Omuz → dirsek (dışarı ve yukarı) → bilek: doğal bükülen kol.
+    const bend = arm.s.clone().lerp(arm.e, 0.55);
+    bend.x += arm.side * 0.42;
+    bend.y += 0.62;
+    const curve = new THREE.CatmullRomCurve3([arm.s.clone(), bend, arm.e.clone()], false, 'centripetal');
+    const old = arm.mesh.geometry;
+    arm.mesh.geometry = new THREE.TubeGeometry(curve, 24, 0.19, 12, false);
+    old.dispose();
+
+    // Altın kol bandı ve omuzluk.
+    const at = curve.getPoint(0.3);
+    const tangent = curve.getTangent(0.3);
+    arm.band.position.copy(at);
+    arm.band.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tangent);
+    arm.pad.position.copy(arm.s);
   }
 
   /** Avucun dünya konumu (küreler buradan fırlar). */
@@ -190,6 +275,10 @@ export class Zeus {
     this.handRight.position.y = this.handBaseY + bob + lift * 0.42;
     this.handRight.position.z = lift * 0.2;
     this.handRight.rotation.z = this.handTilt - lift * 0.14;
+
+    this.hands.updateMatrixWorld();
+    this.group.updateMatrixWorld();
+    for (const arm of this.arms) this._updateArm(arm);
 
     this.flash.material.opacity = glow * 0.95;
     this.flash.scale.setScalar(1.6 + glow * 1.5 + Math.sin(t * 6) * 0.05 * glow);

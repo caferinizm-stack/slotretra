@@ -1443,3 +1443,184 @@ body {
   background: rgba(255, 209, 102, 0.1);
   border: 1px solid rgba(255, 209, 102, 0.22);
 }
+
+/* ═══ Modern arayüz (bakiye · bahis · çevir) ═════════════════════════════════
+   Not: canlı 3B sahnenin üstündeki öğelerde `backdrop-filter` **kullanılmaz**
+   (her karede bulanıklık yeniden hesaplanıyor, telefonda takılmaya yol
+   açıyordu); yerine yarı saydam koyu degrade. */
+
+.pill,
+.mult-box,
+.bonus-pool,
+.scatter-hint {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.pill.balance {
+  position: relative;
+  padding: 6px 14px 6px 6px;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  color: #fff4d6;
+  background:
+    linear-gradient(rgba(16, 10, 34, 0.92), rgba(16, 10, 34, 0.92)) padding-box,
+    linear-gradient(120deg, #ffd166, #8b6bff 55%, #43e0ff) border-box;
+  border: 1.5px solid transparent;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 18px rgba(139, 107, 255, 0.18);
+}
+
+.pill.balance .coin {
+  width: 24px;
+  height: 24px;
+  padding: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4b2f9c, #1a0f3c);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.pill.balance.bump {
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45), 0 0 26px rgba(255, 209, 102, 0.55);
+}
+
+.help {
+  background: linear-gradient(180deg, rgba(40, 28, 80, 0.9), rgba(16, 10, 34, 0.92)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+.controls {
+  padding: 10px 12px 6px;
+  background: linear-gradient(180deg, rgba(14, 9, 30, 0) 0%, rgba(14, 9, 30, 0.85) 30%, #0b0718 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.bet-box {
+  padding: 5px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1d1440, #120c28);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.bet-box button {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 0;
+  color: #fff;
+  font-size: 19px;
+  background: linear-gradient(160deg, #6a4bff, #3b1f9a);
+  box-shadow: 0 4px 12px rgba(91, 61, 230, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.bet-box button:active {
+  transform: scale(0.9);
+  filter: brightness(1.2);
+}
+
+.bet-value small {
+  font-size: 7.5px;
+  letter-spacing: 0.2em;
+  color: #a79ecd;
+}
+
+.bet-value b {
+  font-size: 15px;
+  color: #ffe9b8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Çevir: dönen ışık halkalı modern düğme. */
+.spin {
+  width: 82px;
+  height: 82px;
+  background:
+    radial-gradient(circle at 50% 28%, #fff7dc 0%, #ffd060 38%, #f39a12 72%, #b85d00 100%);
+  color: #3a1e00;
+  box-shadow:
+    0 14px 34px rgba(255, 160, 20, 0.45),
+    0 0 0 4px rgba(18, 12, 40, 0.95),
+    inset 0 -6px 14px rgba(120, 50, 0, 0.45),
+    inset 0 4px 10px rgba(255, 255, 255, 0.55);
+  transition: transform 0.12s ease, filter 0.2s ease;
+}
+
+.spin {
+  isolation: isolate;
+}
+
+.spin::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ffd166, #ff6ad5, #8b6bff, #43e0ff, #ffd166);
+  -webkit-mask: radial-gradient(circle, transparent 60%, #000 61%);
+  mask: radial-gradient(circle, transparent 60%, #000 61%);
+  opacity: 0.75;
+  animation: spin-ring 4s linear infinite;
+  z-index: -1;
+}
+
+.spin.spinning::before {
+  animation-duration: 0.7s;
+  opacity: 1;
+}
+
+.spin-glow {
+  display: none;
+}
+
+.spin-label {
+  position: relative;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.spin-label::before {
+  content: '↻';
+  display: block;
+  font-size: 20px;
+  line-height: 0.9;
+  text-align: center;
+}
+
+.spin.spinning .spin-label::before {
+  animation: spin-ring 0.7s linear infinite;
+}
+
+.spin[disabled] {
+  filter: saturate(0.6) brightness(0.85);
+}
+
+.spin:active {
+  transform: scale(0.93);
+}
+
+@keyframes spin-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Büyük kazanç ve çarpan yazıları: canlı degrade. */
+.big-win b,
+.mult-box b {
+  background: linear-gradient(180deg, #ffffff 0%, #ffe9a6 40%, #ffb12e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 10px rgba(255, 190, 60, 0.6));
+}
+
+.big-win {
+  will-change: transform, opacity;
+}

@@ -8,9 +8,15 @@
 // derinlik testi kapalıdır (hiçbir sembol onu kapatmaz).
 
 import * as THREE from 'three';
-import { glowTexture, multiplierTexture } from './textures.js';
+import { glowTexture, multiplierTexture, ringTexture } from './textures.js';
 import { easeInOutQuad, easeOutCubic } from '../core/utils.js';
 import { Tweens } from '../core/tween.js';
+
+/** Çarpan kademesinin rengi (iz ve halka). */
+const tierColor = (value) =>
+  value >= 500 ? 0xff5cf0 : value >= 50 ? 0xff6a3d : value >= 10 ? 0xc06bff : 0x3de0ff;
+
+const TRAIL = 8;
 
 export class Orbs {
   constructor(scene) {
@@ -44,7 +50,8 @@ export class Orbs {
     mid.y += 2.6;
     mid.z += 1.4;
 
-    // Uçuş: bezier yayı + büyüme + hafif dönüş.
+    // Uçuş: bezier yayı + büyüme + dönüş; arkasında renkli ışık izi.
+    orb.flying = true;
     await this.tweens.add({
       duration: 0.62,
       delay,
@@ -64,18 +71,38 @@ export class Orbs {
         orb.group.scale.setScalar(1);
         orb.group.rotation.z = 0;
         orb.settled = true;
+        orb.flying = false;
         orb.baseZ = to.z;
         this.onLand?.();
-        // Konduğunda kısa bir "pop".
+        // İnişte: genişleyen renkli halka + ışık + sayının "yumruk" büyümesi.
+        orb.ring.position.copy(to);
+        orb.ring.position.z += 0.3;
+        orb.ring.visible = true;
         this.tweens.add({
-          duration: 0.26,
-          ease: (t) => 1 - (1 - t) ** 2,
+          duration: 0.5,
           onUpdate: (k) => {
-            const s = 1 + Math.sin(k * Math.PI) * 0.18;
-            orb.group.scale.setScalar(s);
+            orb.ring.scale.setScalar(0.4 + k * 2.4);
+            orb.ring.material.opacity = 1 - k;
           },
-          onDone: () => orb.group.scale.setScalar(1),
+          onDone: () => {
+            orb.ring.visible = false;
+          },
         });
+        this.tweens.add({
+          duration: 0.46,
+          ease: (t) => t,
+          onUpdate: (k) => {
+            // 1.7 → 1 arası yaylı sönüm.
+            const s = 1 + 0.7 * Math.exp(-6 * k) * Math.cos(k * 14);
+            orb.group.scale.setScalar(s);
+            orb.glow.material.opacity = 0.5 + 0.5 * (1 - k);
+          },
+          onDone: () => {
+            orb.group.scale.setScalar(1);
+            orb.glow.material.opacity = 0.5;
+          },
+        });
+        for (const ghost of orb.trail) ghost.visible = false;
       },
     });
 
@@ -114,9 +141,50 @@ export class Orbs {
     );
     glow.scale.set(1.05, 1.05, 1);
     glow.renderOrder = 19;
+    glow.material.color.set(tierColor(value)).lerp(new THREE.Color(0xffc857), 0.35);
     group.add(glow);
 
+    // Uçuş izi (dünya uzayında, kürenin arkasında).
+    const trail = [];
+    for (let i = 0; i < TRAIL; i += 1) {
+      const ghost = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: glowTexture(),
+          color: tierColor(value),
+          transparent: true,
+          opacity: 0.0,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          depthTest: false,
+          toneMapped: false,
+        }),
+      );
+      ghost.renderOrder = 18;
+      ghost.visible = false;
+      this.group.add(ghost);
+      trail.push(ghost);
+    }
+    const ring = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: ringTexture(),
+        color: tierColor(value),
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        depthTest: false,
+        toneMapped: false,
+      }),
+    );
+    ring.renderOrder = 21;
+    ring.visible = false;
+    this.group.add(ring);
+
     return {
+      trail,
+      ring,
+      history: [],
+      flying: false,
       group,
       quad,
       glow,
@@ -140,6 +208,7 @@ export class Orbs {
 
     const jobs = list.map((orb, index) => {
       orb.collecting = true;
+      orb.history.length = 0;
       const from = orb.group.position.clone();
       const arc = 0.9 + Math.random() * 0.5;
       return this.tweens.add({
@@ -164,6 +233,12 @@ export class Orbs {
   }
 
   _dispose(orb) {
+    for (const ghost of orb.trail) {
+      ghost.removeFromParent();
+      ghost.material.dispose();
+    }
+    orb.ring.removeFromParent();
+    orb.ring.material.dispose();
     orb.group.removeFromParent();
     orb.quad.geometry.dispose();
     orb.quad.material.dispose();
@@ -177,6 +252,7 @@ export class Orbs {
     if (!items.length) return;
     const jobs = items.map((orb) => {
       orb.collecting = true;
+      orb.history.length = 0;
       return this.tweens.add({
         duration: 0.3,
         onUpdate: (k) => {
@@ -200,6 +276,23 @@ export class Orbs {
     this.time += dt;
     this.tweens.update(dt);
     for (const orb of this.items) {
+      // Uçarken / toplanırken iz: son konumlar, giderek küçülen ışıklar.
+      if (orb.flying || orb.collecting) {
+        orb.history.unshift(orb.group.position.clone());
+        if (orb.history.length > TRAIL * 2) orb.history.length = TRAIL * 2;
+        orb.trail.forEach((ghost, i) => {
+          const point = orb.history[i * 2 + 1];
+          if (!point) {
+            ghost.visible = false;
+            return;
+          }
+          ghost.visible = true;
+          ghost.position.copy(point);
+          const fade = 1 - i / TRAIL;
+          ghost.scale.setScalar(0.75 * fade * Math.max(0.2, orb.group.scale.x));
+          ghost.material.opacity = 0.7 * fade;
+        });
+      }
       if (!orb.settled || orb.collecting) continue;
       const t = this.time;
       // Hafif nefes: sayı okunur kalır, arkadaki ışıma nabız atar.

@@ -739,12 +739,49 @@ const DRAW = {
   zeus: drawZeusFace,
 };
 
+// ── 3B semboller ────────────────────────────────────────────────────────────
+//
+// Semboller **3B işlenmiş görsellerdir** (`assets/sym/*.png` · Microsoft
+// Fluent Emoji 3D, MIT lisansı: `assets/sym/FLUENT_LICENSE.txt`; mücevher
+// renkleri ve altın böcek/yüzük bu görsellerden türetildi). Görsel yüklenene
+// kadar (ya da yüklenemezse) eski çizim kullanılır; yüklenince aynı doku
+// yerinde yenilenir — tahta hiç boş kalmaz.
+
+const SYMBOL_IDS = Object.keys(DRAW);
+const symbolImages = new Map();
+
+/** Sembolün vurgu rengi (patlama kıvılcımları, ışıma). */
+export function symbolColor(id) {
+  return (PALETTE[id] ?? PALETTE.gem_blue)[2];
+}
+
+function drawSymbolImage(ctx, id, img) {
+  const S = SIZE;
+  ctx.clearRect(0, 0, S, S);
+  // Arkada sembol renginde yumuşak hâle (derinlik).
+  const halo = ctx.createRadialGradient(S / 2, S / 2, 20, S / 2, S / 2, S * 0.46);
+  halo.addColorStop(0, `${symbolColor(id)}66`);
+  halo.addColorStop(1, `${symbolColor(id)}00`);
+  ctx.fillStyle = halo;
+  ctx.fillRect(0, 0, S, S);
+  // Gölge: sembol karodan "kalkmış" görünsün.
+  const size = id === 'zeus' ? S * 0.86 : S * 0.8;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+  ctx.shadowBlur = 26;
+  ctx.shadowOffsetY = 16;
+  ctx.drawImage(img, (S - size) / 2, (S - size) / 2 - 6, size, size);
+  ctx.restore();
+}
+
 /** Sembol tuvali (doku ve yardım ekranı aynı çizimi paylaşır). */
 function symbolCanvas(id) {
   return cached(`symcanvas_${id}`, () => {
     const canvas = canvas2d();
     const ctx = canvas.getContext('2d');
-    (DRAW[id] ?? DRAW.gem_blue)(ctx);
+    const img = symbolImages.get(id);
+    if (img) drawSymbolImage(ctx, id, img);
+    else (DRAW[id] ?? DRAW.gem_blue)(ctx);
     return canvas;
   });
 }
@@ -759,36 +796,127 @@ export function symbolDataURL(id) {
   return cached(`symurl_${id}`, () => symbolCanvas(id).toDataURL('image/png'));
 }
 
+/**
+ * 3B sembol görsellerini yükler; yüklenen her sembolün tuvali ve dokusu
+ * yerinde yenilenir. En geç [timeoutMs] sonra çözülür (yavaş ağda oyun
+ * beklemez, eski çizimle açılır ve görsel gelince değişir).
+ */
+export function loadSymbolImages(timeoutMs = 2500) {
+  const jobs = SYMBOL_IDS.map(
+    (id) =>
+      new Promise((resolve) => {
+        const img = new Image();
+        img.decoding = 'async';
+        img.onload = () => {
+          symbolImages.set(id, img);
+          const canvas = cache.get(`symcanvas_${id}`);
+          if (canvas) drawSymbolImage(canvas.getContext('2d'), id, img);
+          const texture = cache.get(`sym_${id}`);
+          if (texture) texture.needsUpdate = true;
+          cache.delete(`symurl_${id}`);
+          resolve(true);
+        };
+        img.onerror = () => resolve(false);
+        img.src = `./assets/sym/${id}.png`;
+      }),
+  );
+  return Promise.race([
+    Promise.all(jobs),
+    new Promise((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+}
+
+/** Patlamada genişleyen ışık halkası (beyaz; renk materyalden gelir). */
+export function ringTexture() {
+  return cached('ring_fx', () => {
+    const canvas = canvas2d(256);
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createRadialGradient(128, 128, 60, 128, 128, 126);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(0.62, 'rgba(255,255,255,0.08)');
+    grad.addColorStop(0.82, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.9, 'rgba(255,255,255,0.55)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+    return toTexture(canvas);
+  });
+}
+
+/** Patlamada saçılan yıldız parıltısı (dört kollu). */
+export function starTexture() {
+  return cached('star_fx', () => {
+    const canvas = canvas2d(128);
+    const ctx = canvas.getContext('2d');
+    const glow = ctx.createRadialGradient(64, 64, 0, 64, 64, 40);
+    glow.addColorStop(0, 'rgba(255,255,255,1)');
+    glow.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, 128, 128);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    for (const rot of [0, Math.PI / 2]) {
+      ctx.save();
+      ctx.translate(64, 64);
+      ctx.rotate(rot);
+      ctx.beginPath();
+      ctx.moveTo(-62, 0);
+      ctx.quadraticCurveTo(0, -5, 62, 0);
+      ctx.quadraticCurveTo(0, 5, -62, 0);
+      ctx.fill();
+      ctx.restore();
+    }
+    return toTexture(canvas);
+  });
+}
+
 /** Tahtadaki karonun mor mermer plakası (altın ince kenarlı). */
 export function stoneTexture() {
   return cached('stone', () => {
-    const canvas = canvas2d(256);
+    // **Modern cam karo**: koyu mor zemin, üstten yumuşak ışık, ince parlak
+    // kenar (eski mermer/altın çerçeve yerine sade ve derin görünüm).
+    const S = 256;
+    const canvas = canvas2d(S);
     const ctx = canvas.getContext('2d');
-    const grad = ctx.createRadialGradient(128, 90, 20, 128, 128, 190);
-    grad.addColorStop(0, '#4d2f7d');
-    grad.addColorStop(0.55, '#35205a');
-    grad.addColorStop(1, '#22123d');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 256, 256);
-
-    // Mermer damarları.
-    ctx.strokeStyle = 'rgba(160, 130, 230, 0.14)';
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 6; i += 1) {
+    const r = 34;
+    const rounded = (x, y, w, h, rad) => {
       ctx.beginPath();
-      ctx.moveTo(-10, 30 + i * 34);
-      ctx.bezierCurveTo(70, 10 + i * 36, 150, 70 + i * 30, 266, 40 + i * 34);
-      ctx.stroke();
-    }
-
-    // Altın çerçeve.
-    ctx.strokeStyle = 'rgba(255, 205, 110, 0.55)';
-    ctx.lineWidth = 6;
-    ctx.strokeRect(4, 4, 248, 248);
-    ctx.strokeStyle = 'rgba(255, 240, 190, 0.25)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(12, 12, 232, 232);
-
+      ctx.moveTo(x + rad, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rad);
+      ctx.arcTo(x + w, y + h, x, y + h, rad);
+      ctx.arcTo(x, y + h, x, y, rad);
+      ctx.arcTo(x, y, x + w, y, rad);
+      ctx.closePath();
+    };
+    ctx.fillStyle = '#0d0820';
+    ctx.fillRect(0, 0, S, S);
+    const base = ctx.createLinearGradient(0, 0, 0, S);
+    base.addColorStop(0, '#3a2a78');
+    base.addColorStop(0.5, '#241850');
+    base.addColorStop(1, '#160e34');
+    rounded(6, 6, S - 12, S - 12, r);
+    ctx.fillStyle = base;
+    ctx.fill();
+    // Üst parlama.
+    const sheen = ctx.createRadialGradient(S / 2, -20, 10, S / 2, 40, S * 0.75);
+    sheen.addColorStop(0, 'rgba(190, 160, 255, 0.35)');
+    sheen.addColorStop(1, 'rgba(190, 160, 255, 0)');
+    ctx.fillStyle = sheen;
+    ctx.fill();
+    // İç gölge (alt).
+    const inner = ctx.createLinearGradient(0, S * 0.6, 0, S);
+    inner.addColorStop(0, 'rgba(0,0,0,0)');
+    inner.addColorStop(1, 'rgba(0,0,0,0.35)');
+    ctx.fillStyle = inner;
+    ctx.fill();
+    // İnce kenar: üstte parlak, altta koyu.
+    const edge = ctx.createLinearGradient(0, 0, 0, S);
+    edge.addColorStop(0, 'rgba(214, 196, 255, 0.75)');
+    edge.addColorStop(0.5, 'rgba(150, 120, 230, 0.28)');
+    edge.addColorStop(1, 'rgba(255, 200, 110, 0.35)');
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = edge;
+    rounded(8, 8, S - 16, S - 16, r - 2);
+    ctx.stroke();
     return toTexture(canvas);
   });
 }
@@ -842,11 +970,22 @@ export function multiplierTexture(value) {
       size -= 12;
     } while (size > 96);
 
-    // Dış ışıma.
+    // Değer kademesine göre renkli ışıma + arkada cam rozet.
+    const tier =
+      value >= 500 ? ['#ff3df2', '#ffd23d'] :
+      value >= 50 ? ['#ff4d4d', '#ff9a3d'] :
+      value >= 10 ? ['#b44dff', '#ff5cc8'] :
+      ['#2fd1ff', '#3dff9a'];
+    const badge = ctx.createRadialGradient(256, 256, 30, 256, 256, 230);
+    badge.addColorStop(0, `${tier[0]}55`);
+    badge.addColorStop(0.7, `${tier[1]}22`);
+    badge.addColorStop(1, `${tier[1]}00`);
+    ctx.fillStyle = badge;
+    ctx.fillRect(0, 0, S, S);
     ctx.save();
-    ctx.shadowColor = 'rgba(255, 168, 40, 0.95)';
-    ctx.shadowBlur = 46;
-    ctx.fillStyle = 'rgba(255, 196, 80, 0.55)';
+    ctx.shadowColor = tier[0];
+    ctx.shadowBlur = 54;
+    ctx.fillStyle = `${tier[1]}aa`;
     ctx.fillText(label, 256, 268);
     ctx.restore();
 
@@ -1349,29 +1488,8 @@ export function zeusHandTexture() {
     ctx.rotate(-0.21);
     ctx.translate(-cx, -152);
 
-    const arm = ctx.createLinearGradient(cx - 62, 0, cx + 62, 0);
-    arm.addColorStop(0, SKIN_DARK);
-    arm.addColorStop(0.22, SKIN_MID);
-    arm.addColorStop(0.6, SKIN);
-    arm.addColorStop(1, SKIN_LIGHT);
-    ctx.beginPath();
-    ctx.moveTo(cx - 58, 44);
-    ctx.quadraticCurveTo(cx - 56, 100, cx - 56, 150);
-    ctx.lineTo(cx + 56, 150);
-    ctx.quadraticCurveTo(cx + 56, 100, cx + 58, 44);
-    ctx.closePath();
-    ctx.fillStyle = arm;
-    ctx.fill();
-
-    // Kas gölgesi (kolu hacimlendirir).
-    ctx.beginPath();
-    ctx.ellipse(cx - 30, 96, 16, 40, 0.08, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(150, 92, 58, 0.2)';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(cx + 34, 104, 12, 34, -0.08, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 240, 222, 0.18)';
-    ctx.fill();
+    // Ön kol artık 3B tüp olarak çizilir (zeus.js ▸ kollar); burada yalnız
+    // bilezik ve el kalır, kol omuza kesintisiz bağlanır.
 
     // ── Bilezik ────────────────────────────────────────────────────────────
     const bracer = ctx.createLinearGradient(cx - 58, 116, cx + 58, 156);

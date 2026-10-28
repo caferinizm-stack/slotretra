@@ -24,7 +24,7 @@ import { formatCoins, wait } from './core/utils.js';
 import { Sound } from './core/audio.js';
 import { createEngine } from './engine/index.js';
 import { Stage } from './scene/stage.js';
-import { symbolDataURL } from './scene/textures.js';
+import { loadSymbolImages, symbolDataURL } from './scene/textures.js';
 import { Hud } from './ui/hud.js';
 
 const canvas = document.getElementById('scene');
@@ -129,6 +129,8 @@ class Game {
     hud.boot(10, 'Olympos kapıları açılıyor…');
     await wait(60);
     hud.boot(42, 'Tahta hazırlanıyor…');
+    // 3B sembol görselleri (en geç 2,5 sn beklenir; gelmezse eski çizim).
+    await loadSymbolImages();
 
     // Yardım ekranı (sembol ödemeleri) — sahne kurulurken hazırlanır.
     hud.setPaytable(this.payRows(this.hud.bet));
@@ -250,12 +252,16 @@ class Game {
     let bonusStarted = false;
 
     try {
+      // Eski semboller tablonun içinde aşağı düşerken sunucu cevabı gelir
+      // (bekleme hissi olmaz).
+      this.dropOut();
       let response = buy
         ? await this.engine.buyBonus(this.hud.bet)
         : await this.engine.spin(this.hud.bet);
 
       if (response.error) {
         this.hud.toast(response.error, 'error');
+        await this.restoreBoard();
         return;
       }
 
@@ -291,9 +297,11 @@ class Game {
         await wait(620);
 
         this.sound.spin();
+        this.dropOut();
         response = await this.engine.spin(response.script.free.bet);
         if (response.error) {
           this.hud.toast(response.error, 'error');
+          await this.restoreBoard();
           break;
         }
         await this.playScript(response.script, response.balance, false, 'bonus');
@@ -320,12 +328,29 @@ class Game {
       console.error('[dede] tur hatası', error);
       this.hud.toast('Bir sorun oldu, tekrar dene.', 'error');
     } finally {
+      if (this._dropOut) await this.restoreBoard().catch(() => {});
       this.playing = false;
       this.hud.setBusy(false);
       await this.stage.orbs.fadeOut();
       this.stage.grid.resetGlow();
       this.syncState();
     }
+  }
+
+  /** Çevirişin başında eski tahtayı aşağı düşürür (bir kez). */
+  dropOut() {
+    if (this._dropOut) return this._dropOut;
+    this._lastGrid = this.stage.grid.currentGrid();
+    this._dropOut = this.stage.grid.dropOut();
+    return this._dropOut;
+  }
+
+  /** Hata olursa eski tahta geri düşer (ekran boş kalmaz). */
+  async restoreBoard() {
+    if (!this._dropOut) return;
+    await this._dropOut;
+    this._dropOut = null;
+    await this.stage.grid.dropIn(this._lastGrid ?? this.stage.grid.currentGrid());
   }
 
   /** Bonus başlangıcı: havuzu sıfırla, göstergeleri aç. */
@@ -361,6 +386,10 @@ class Game {
       // Tahta: ilk adım yukarıdan düşer, sonrakiler kayarak yenilenir.
       if (index === 0) {
         stage.grid.resetGlow();
+        if (this._dropOut) {
+          await this._dropOut;
+          this._dropOut = null;
+        }
         await stage.grid.dropIn(step.grid);
       } else {
         await stage.grid.tumble(cleared, step.grid);

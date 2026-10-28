@@ -43,6 +43,8 @@ export class Stage {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.12;
+    // Semboller yalnız tablonun **içinde** görünür (üst/alt kenarda kesilir).
+    this.renderer.localClippingEnabled = true;
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x080512);
@@ -297,7 +299,9 @@ export class Stage {
     const width = Math.max(1, host.clientWidth);
     const height = Math.max(1, host.clientHeight);
 
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Telefonda akıcılık: çözünürlük en fazla 1,75× (fark görünmez, kare
+    // başına çizilen piksel ~%25 azalır).
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
